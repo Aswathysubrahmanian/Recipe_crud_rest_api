@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+
+        .star {
+            font-size: 2rem;
+            cursor: pointer;
+            color: gray;
+            transition: color 0.2s;
+        }
+
+        .star.selected {
+            color: gold;
+        }
+
+        .star:hover {
+            color: gold;
+        }
+
+        #star-rating {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="container p-5 m-5">
+    <div class="card " style="width:1500px;">
+<div class="row card-header">
+            <div class="col-md-6">
+                <h1 >{{api_data.name}}</h1>
+            </div>
+            <div class="col-md-6 text-end">
+                <p >
+                    Time: {{ api_data.prep_time }} Min &nbsp;&nbsp;&nbsp;
+                    Difficulty:
+                    {% if api_data.difficulty == 1 %}
+                        Easy
+                    {% elif api_data.difficulty == 2 %}
+                        Medium
+                    {% else %}
+                        Hard
+                    {% endif %}
+                     <a href="/update/{{api_data.id}}/" class="btn btn-outline-info text-end"><i class="fa-solid fa-pen-to-square"></i></a>
+                    <a href="/delete/{{api_data.id}}/" class="btn btn-outline-danger text-end"><i class="fa-solid fa-trash"></i></a>
+                </p>
+
+            </div>
+        </div>
+
+
+
+
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <img src="{{api_data.image}}" class="img-fluid rounded-start" alt="..." style="height:500px; width:400px;">
+                </div>
+                <div class="col-md-8">
+
+                    <p class="card-text"><strong>Description:-</strong>{{api_data.description}}</p>
+                    <hr>
+                    <div class="row"><div class="col-md-4">  <p class="card-text"><strong>Ingredients:-</strong>
+                        <ul>{% for ingredient in ingredients_list  %}
+                        <li>{{ ingredient }}</li>
+                        {% endfor %}</ul></p>
+                    </div><div class="col-md-8"><p class="card-text"> <strong>Instructions:-</strong> <ul>
+    {% for instruction in instruction_list %}
+    <li>{{ instruction }}</li>
+    {% endfor %}
+</ul></p></div></div>
+                    <hr>
+
+
+                   <p class="card-text">
+    <strong class="text-body-secondary">Type:
+        {% if api_data.vegetarian == True %}
+            vegetarian
+        {% else %}
+            Non-vegetarian
+        {% endif %}
+    </strong>
+</p>
+            </div>
+        </div>
+    </div>
+<div class="card-footer">
+      <form method="post" action="">
+        {% csrf_token %}
+        <div id="star-rating">
+            <input type="hidden" name="rating" id="rating" value="{{ user_rating.value }}">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+        </div>
+        <button type="submit" class="btn btn-primary">Rate</button>
+    </form>
+
+    <h2>Average Rating</h2>
+    <p>{{ average_rating|default:"No ratings yet" }}</p>
+</div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const starRating = document.getElementById("star-rating");
+            const ratingInput = document.getElementById("rating");
+            const stars = starRating.querySelectorAll(".star");
+
+            stars.forEach(star => {
+                star.addEventListener("click", (event) => {
+                    const clickedValue = event.target.getAttribute("data-value");
+                    ratingInput.value = clickedValue;
+                    updateStars(clickedValue);
+
+                    // Make an asynchronous request to update the average rating
+                    fetch(`/update_average_rating/{{ api_data.id }}/?new_rating=${clickedValue}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Update the average rating element with the new value
+                            document.querySelector("#average-rating").textContent = data.average_rating;
+                        })
+                        .catch(error => {
+                            console.error('Error updating average rating:', error);
+                        });
+                });
+            });
+
+            function updateStars(selectedValue) {
+                stars.forEach(star => {
+                    const starValue = star.getAttribute("data-value");
+                    if (starValue <= selectedValue) {
+                        star.classList.add("selected");
+                    } else {
+                        star.classList.remove("selected");
+                    }
+                });
+            }
+
+            // Initialize the stars with the user's current rating, if available
+            updateStars(ratingInput.value);
+        });
+    </script>
+    </div>
+
+    </body>
+</html>
